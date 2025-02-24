@@ -1,0 +1,98 @@
+---
+- name: Setup Raspberry Pi Zero 2 W Hotspot
+  hosts: raspberrypi
+  become: yes
+  tasks:
+
+    - name: Update and upgrade system
+      apt:
+        update_cache: yes
+        upgrade: yes
+
+    - name: Install required packages
+      apt:
+        name:
+          - dnsmasq
+          - hostapd
+        state: present
+
+    - name: Set static IP for wlan0
+      lineinfile:
+        path: /etc/dhcpcd.conf
+        line: |
+          interface wlan0
+          static ip_address=192.168.4.1/24
+          nohook wpa_supplicant
+        state: present
+
+    - name: Restart dhcpcd service
+      systemd:
+        name: dhcpcd
+        state: restarted
+
+    - name: Backup default dnsmasq config
+      command: mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
+      args:
+        creates: /etc/dnsmasq.conf.bak
+
+    - name: Configure dnsmasq for DHCP
+      copy:
+        dest: /etc/dnsmasq.conf
+        content: |
+          interface=wlan0
+          dhcp-range=192.168.4.10,192.168.4.100,255.255.255.0,24h
+
+    - name: Restart dnsmasq
+      systemd:
+        name: dnsmasq
+        state: restarted
+
+    - name: Configure hostapd
+      copy:
+        dest: /etc/hostapd/hostapd.conf
+        content: |
+          interface=wlan0
+          driver=nl80211
+          ssid=PiZeroHotspot
+          hw_mode=g
+          channel=6
+          wmm_enabled=0
+          macaddr_acl=0
+          auth_algs=1
+          ignore_broadcast_ssid=0
+          wpa=2
+          wpa_passphrase=YourSecurePassword
+          wpa_key_mgmt=WPA-PSK
+          rsn_pairwise=CCMP
+
+    - name: Point hostapd to config file
+      lineinfile:
+        path: /etc/default/hostapd
+        regexp: '^#?DAEMON_CONF='
+        line: 'DAEMON_CONF="/etc/hostapd/hostapd.conf"'
+
+    - name: Enable IP forwarding
+      lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^#?net.ipv4.ip_forward'
+        line: 'net.ipv4.ip_forward=1'
+
+    - name: Apply sysctl changes
+      command: sysctl -p
+
+    - name: Start and enable hostapd
+      systemd:
+        name: hostapd
+        enabled: yes
+        state: started
+
+    - name: Restart services
+      systemd:
+        name: dnsmasq
+        state: restarted
+
+    - name: Reboot system
+      reboot:
+        msg: "Rebooting to apply hotspot settings"
+        pre_reboot_delay: 5
+
