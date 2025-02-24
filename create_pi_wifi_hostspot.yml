@@ -1,6 +1,6 @@
 ---
 - name: Setup Raspberry Pi Zero 2 W Hotspot on Bookworm
-  hosts: raspberrypi
+  hosts: all
   become: yes
   tasks:
 
