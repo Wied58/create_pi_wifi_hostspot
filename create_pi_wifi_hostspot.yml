@@ -111,10 +111,6 @@
         name: dnsmasq
         state: restarted
 
-    - name: Reboot system
-      reboot:
-        msg: "Rebooting to apply hotspot settings"
-        pre_reboot_delay: 5
 
 handlers:
   - name: Restart systemd-networkd
