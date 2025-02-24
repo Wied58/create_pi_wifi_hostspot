@@ -1,5 +1,5 @@
 ---
-- name: Setup Raspberry Pi Zero 2 W Hotspot
+- name: Setup Raspberry Pi Zero 2 W Hotspot on Bookworm
   hosts: all
   become: yes
   tasks:
@@ -14,7 +14,19 @@
         name:
           - dnsmasq
           - hostapd
+          - iptables-legacy
         state: present
+
+    - name: Enable and start dhcpcd
+      systemd:
+        name: dhcpcd
+        enabled: yes
+        state: started
+
+    - name: Mask wpa_supplicant to avoid conflicts with hostapd
+      systemd:
+        name: wpa_supplicant
+        masked: yes
 
     - name: Set static IP for wlan0
       lineinfile:
