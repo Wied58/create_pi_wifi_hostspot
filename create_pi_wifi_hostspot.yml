@@ -17,30 +17,31 @@
           - nftables
         state: present
 
-    - name: Enable and start dhcpcd
-      systemd:
-        name: dhcpcd
-        enabled: yes
-        state: started
 
     - name: Mask wpa_supplicant to avoid conflicts with hostapd
       systemd:
         name: wpa_supplicant
         masked: yes
 
-    - name: Set static IP for wlan0
-      lineinfile:
-        path: /etc/dhcpcd.conf
-        line: |
-          interface wlan0
-          static ip_address=192.168.4.1/24
-          nohook wpa_supplicant
-        state: present
 
-    - name: Restart dhcpcd service
+    - name: Configure static IP for wlan0 using systemd-networkd
+      copy:
+        dest: /etc/systemd/network/10-wlan0.network
+        content: |
+          [Match]
+          Name=wlan0
+    
+          [Network]
+          Address=192.168.4.1/24
+          DHCPServer=yes
+    
+      notify: Restart systemd-networkd
+    
+    - name: Restart systemd-networkd
       systemd:
-        name: dhcpcd
+        name: systemd-networkd
         state: restarted
+
 
     - name: Backup default dnsmasq config
       command: mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
