@@ -15,7 +15,7 @@
           - dnsmasq
           - hostapd
           - nftables
-          - systemd-networkd
+#          - systemd-networkd
         state: present
 
     - name: Unmask and enable hostapd service
