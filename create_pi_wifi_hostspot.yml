@@ -1,6 +1,6 @@
 ---
 - name: Setup Raspberry Pi Zero 2 W Hotspot
-  hosts: raspberrypi
+  hosts: all
   become: yes
   tasks:
 
