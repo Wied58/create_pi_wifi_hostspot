@@ -14,7 +14,7 @@
         name:
           - dnsmasq
           - hostapd
-          - iptables-legacy
+          - iptables
         state: present
 
     - name: Enable and start dhcpcd
