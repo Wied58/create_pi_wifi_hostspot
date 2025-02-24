@@ -1,6 +1,6 @@
 ---
 - name: Setup Raspberry Pi Zero 2 W Hotspot on Bookworm
-  hosts: all
+  hosts: raspberrypi
   become: yes
   tasks:
 
@@ -14,7 +14,7 @@
         name:
           - dnsmasq
           - hostapd
-          - iptables
+          - nftables
         state: present
 
     - name: Enable and start dhcpcd
@@ -91,6 +91,26 @@
 
     - name: Apply sysctl changes
       command: sysctl -p
+
+    - name: Configure NAT using nftables
+      copy:
+        dest: /etc/nftables.conf
+        content: |
+          table inet nat {
+            chain postrouting {
+              type nat hook postrouting priority 100; policy accept;
+              oifname "eth0" masquerade
+            }
+          }
+
+    - name: Enable and start nftables service
+      systemd:
+        name: nftables
+        enabled: yes
+        state: started
+
+    - name: Unmask hostapd service
+      command: systemctl unmask hostapd
 
     - name: Start and enable hostapd
       systemd:
