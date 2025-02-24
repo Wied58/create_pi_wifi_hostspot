@@ -113,8 +113,8 @@
 
 
 handlers:
-  - name: Restart systemd-networkd
-    systemd:
-      name: systemd-networkd
-      state: restarted
+    - name: Restart systemd-networkd
+      systemd:
+        name: systemd-networkd
+        state: restarted
 
