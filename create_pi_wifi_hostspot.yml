@@ -1,6 +1,6 @@
 ---
 - name: Setup Raspberry Pi Zero 2 W Hotspot on Bookworm
-  hosts: all
+  hosts: raspberrypi
   become: yes
   tasks:
 
@@ -15,14 +15,17 @@
           - dnsmasq
           - hostapd
           - nftables
+          - systemd-networkd
         state: present
 
+    - name: Unmask and enable hostapd service
+      command: systemctl unmask hostapd
 
-    - name: Mask wpa_supplicant to avoid conflicts with hostapd
+    - name: Enable and start hostapd
       systemd:
-        name: wpa_supplicant
-        masked: yes
-
+        name: hostapd
+        enabled: yes
+        state: started
 
     - name: Configure static IP for wlan0 using systemd-networkd
       copy:
@@ -30,18 +33,11 @@
         content: |
           [Match]
           Name=wlan0
-    
+
           [Network]
           Address=192.168.4.1/24
           DHCPServer=yes
-    
       notify: Restart systemd-networkd
-    
-    - name: Restart systemd-networkd
-      systemd:
-        name: systemd-networkd
-        state: restarted
-
 
     - name: Backup default dnsmasq config
       command: mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
@@ -110,15 +106,6 @@
         enabled: yes
         state: started
 
-    - name: Unmask hostapd service
-      command: systemctl unmask hostapd
-
-    - name: Start and enable hostapd
-      systemd:
-        name: hostapd
-        enabled: yes
-        state: started
-
     - name: Restart services
       systemd:
         name: dnsmasq
@@ -128,4 +115,10 @@
       reboot:
         msg: "Rebooting to apply hotspot settings"
         pre_reboot_delay: 5
+
+handlers:
+  - name: Restart systemd-networkd
+    systemd:
+      name: systemd-networkd
+      state: restarted
 
